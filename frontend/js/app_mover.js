@@ -1,16 +1,23 @@
 
 var gcode_coordinate_offset = undefined;
-var lastclickX=0.0;
-var lastclickY=0.0;
+var currentX=0.0;
+var currentY=0.0;
 
 function reset_offset() {
   $("#offset_area").hide();
   $('#offset_area').css({'opacity':0.0, left:0, top:0});
+  $('#current_position').css({'opacity':0.0, left:0, top:0});
+  $('#current_position-b').css({'opacity':0.0, left:0, top:0});
   gcode_coordinate_offset = undefined;
 	$("#cutting_area").css('border', '1px dashed #ff0000');
-	$("#offset_area").css('border', '1px dashed #aaaaaa');
+	$("#offset_area").css('border', '1px  dashed #aaaaaa');
+	
   send_gcode('G54\n', "Offset reset.", "Serial not connected.");
   $('#coordinates_info').text('');
+	$('#x_field').val(0);
+	$('#y_field').val(0);
+	 currentX=0.0;
+	 currentY=0.0;
 }
 
   
@@ -59,13 +66,18 @@ $(document).ready(function(){
   	var offset = $(this).offset();
   	var x = (e.pageX - offset.left);
   	var y = (e.pageY - offset.top);
-	lastclickX=x;
-	lastclickY=y;
+	currentX=x;
+	currentY=y;
+	
+	$('#x_field').val(x*2.0);
+	$('#y_field').val(y*2.0);
 
     if(e.shiftKey) {
-      setHome(x,y);
+      set00(x,y);
     } else if (!gcode_coordinate_offset) {	
       assemble_and_send_gcode(x,y);
+	show_position(x,y);
+
     } else {
       var pos = $("#offset_area").position()
       if ((x < pos.left) || (y < pos.top)) {       
@@ -73,6 +85,7 @@ $(document).ready(function(){
         reset_offset();
       }
     }
+
     return false;
   });
 
@@ -124,7 +137,18 @@ $(document).ready(function(){
     if(!e.shiftKey) {
     	var offset = $(this).offset();
     	var x = (e.pageX - offset.left);
-    	var y = (e.pageY - offset.top);     
+    	var y = (e.pageY - offset.top);    
+
+    	var cuttingAreaOffset = $("#cutting_area").offset();
+
+		currentX=(e.pageX - cuttingAreaOffset.left);
+		currentY=(e.pageY - cuttingAreaOffset.top);;
+		
+		$('#x_field').val(currentX*2.0);
+		$('#y_field').val(currentY*2.0);
+		
+		 show_position(currentX,currentY);
+		
       assemble_and_send_gcode(x,y);
       return false
     }
@@ -197,10 +221,10 @@ $(document).ready(function(){
   $("#jog_up_btn").click(function(e) {
     if(e.shiftKey) {
 		var gcode = 'G91\nG0Y-1F6000\nG90\n';
-		lastclickY-=.5;
+		currentY-=.5;
 	}else{
 		var gcode = 'G91\nG0Y-10F6000\nG90\n';
-		lastclickY-=5;
+		currentY-=5;
 	}
 	send_gcode(gcode, "Moving Up ...", "Serial not connected.")	
 
@@ -208,115 +232,93 @@ $(document).ready(function(){
   $("#jog_left_btn").click(function(e) {
 	if(e.shiftKey) {
 		var gcode = 'G91\nG0X-1F6000\nG90\n';
-		lastclickX-=.5;
+		currentX-=.5;
     }else{
     	var gcode = 'G91\nG0X-10F6000\nG90\n';
-		lastclickX-=5;
+		currentX-=5;
 	}	
     send_gcode(gcode, "Moving Left ...", "Serial not connected.")	
   });   
   $("#jog_right_btn").click(function(e) {
 	if(e.shiftKey) {
 	    var gcode = 'G91\nG0X1F6000\nG90\n';
-		lastclickX+=.5;
+		currentX+=.5;
 	}else{
 	    var gcode = 'G91\nG0X10F6000\nG90\n';
-		lastclickX+=5;
+		currentX+=5;
 	}
     send_gcode(gcode, "Moving Right ...", "Serial not connected.")	
   });
   $("#jog_down_btn").click(function(e) {
 	if(e.shiftKey) {
 	    var gcode = 'G91\nG0Y1F6000\nG90\n';
-		lastclickY+=.5;
+		currentY+=.5;
 	}else{
 	    var gcode = 'G91\nG0Y10F6000\nG90\n';
-		lastclickY+=5;
+		currentY+=5;
 	}
     send_gcode(gcode, "Moving Down ...", "Serial not connected.")	
   });
 
 //keyboard arrows to move      
 	$("body").keydown(function(e) {
-		// 37 - left
-		// 38 - up
-		// 39 - right
-		// 40 - down
 		
-		if (e.which==38) {
+		if (e.which==38) {// 38 - up
 		    if(e.shiftKey) {
 				var gcode = 'G91\nG0Y-1F6000\nG90\n';
-				lastclickY-=.5;
+				currentY-=.5;
 			}else{
 				var gcode = 'G91\nG0Y-10F6000\nG90\n';
-				lastclickY-=5;
+				currentY-=5;
 			}
 			send_gcode(gcode, "Moving Up ...", "Serial not connected.")
 		}
-		else if(e.which==37) {
+		else if(e.which==37) {// 37 - left
 			if(e.shiftKey) {
 				var gcode = 'G91\nG0X-1F6000\nG90\n';
-				lastclickX-=.5;
+				currentX-=.5;
 		    }else{
 		    	var gcode = 'G91\nG0X-10F6000\nG90\n';
-				lastclickX-=5;
+				currentX-=5;
 			}	
 		    send_gcode(gcode, "Moving Left ...", "Serial not connected.")
 		}
-		else if (e.which==39) {
+		else if (e.which==39) {// 39 - right
+		
 			if(e.shiftKey) {
 			    var gcode = 'G91\nG0X1F6000\nG90\n';
-				lastclickX+=.5;
+				currentX+=.5;
 			}else{
 			    var gcode = 'G91\nG0X10F6000\nG90\n';
-				lastclickX+=5;
+				currentX+=5;
 			}
 		    send_gcode(gcode, "Moving Right ...", "Serial not connected.")
 		}
-		else if(e.which==40) {
+		else if(e.which==40) {// 40 - down
 			if(e.shiftKey) {
 			    var gcode = 'G91\nG0Y1F6000\nG90\n';
-				lastclickY+=.5;
+				currentY+=.5;
 			}else{
 			    var gcode = 'G91\nG0Y10F6000\nG90\n';
-				lastclickY+=5;
+				currentY+=5;
 			}
 		    send_gcode(gcode, "Moving Down ...", "Serial not connected.")
 		}
-		else if(e.which==13) {
-	      setHome(lastclickX,lastclickY);
-
+		else if(e.which==13) { //enter
+			set00($('#x_field').val()*.5,$('#y_field').val()*.5);
 		}
+		else return;
+		$('#x_field').val(currentX*2.0);
+		$('#y_field').val(currentY*2.0);
+		 show_position(currentX,currentY);
+		
 	});
 
 	//set current location as 0,0
   $("#set_here_00").click(function(e) {
-  	var offset = $(this).offset();
-  	var x = lastclickX;
-  	var y = lastclickY;
-
-	setHome(x,y);
-
-
-    return false;
+	set00($('#x_field').val()*.5,$('#y_field').val()*.5);
   });
 
-function setHome(x,y){
-	//// set offset
-    $("#offset_area").show();
-    $("#offset_area").animate({
-      opacity: 1.0,
-      left: x,
-      top: y,
-      width: 609-x,
-      height: 304-y
-    }, 200 );
-    gcode_coordinate_offset = [x,y];
-    var gcode = 'G10 L2 P1 X'+ 2*x + ' Y' + 2*y + '\nG55\n';
-    send_gcode(gcode, "Offset set.", "Serial not connected.");
-		$(this).css('border', '1px dashed #aaaaaa');
-		$("#offset_area").css('border', '1px dashed #ff0000');
 
-}
 
 });  // ready
